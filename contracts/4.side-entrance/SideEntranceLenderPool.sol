@@ -8,6 +8,10 @@ interface IFlashLoanEtherReceiver {
     function execute() external payable;
 }
 
+contract SideEntranceFlashLoanEtherReceiver is IFlashLoanEtherReceiver {
+
+}
+
 /**
  * @title SideEntranceLenderPool
  * @author Damn Vulnerable DeFi (https://damnvulnerabledefi.xyz)
@@ -37,8 +41,7 @@ contract SideEntranceLenderPool {
     }
 
     function flashLoan(uint256 amount) external {
-        uint256 balanceBefore = address(this).balance;
-
+ 
         IFlashLoanEtherReceiver(msg.sender).execute{value: amount}();
 
         if (address(this).balance < balanceBefore)

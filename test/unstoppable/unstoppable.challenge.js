@@ -45,6 +45,8 @@ describe('[Challenge] Unstoppable', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+        [deployer, player, someUser] = await ethers.getSigners();
+        await token.connect(player).transfer(vault.address, 1n * 10n ** 18n) //send 1 DVT
     });
 
     after(async function () {
