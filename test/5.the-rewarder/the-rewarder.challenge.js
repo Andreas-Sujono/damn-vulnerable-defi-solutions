@@ -4,7 +4,7 @@ const { expect } = require('chai');
 describe('[Challenge] The rewarder', function () {
     const TOKENS_IN_LENDER_POOL = 1000000n * 10n ** 18n; // 1 million tokens
     let users, deployer, alice, bob, charlie, david, player;
-    let liquidityToken, flashLoanPool, rewarderPool, rewardToken, accountingToken;
+    let liquidityToken, flashLoanPool, rewarderPool, rewardToken, accountingToken, rewarderAttacker;
 
     before(async function () {
         /** SETUP SCENARIO - NO NEED TO CHANGE ANYTHING HERE */
@@ -70,6 +70,12 @@ describe('[Challenge] The rewarder', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+        const RewarderAttacker = await ethers.getContractFactory('RewarderAttacker', player);
+        rewarderAttacker = await RewarderAttacker.connect(player).deploy(rewarderPool.address, flashLoanPool.address, accountingToken.address);
+
+        await ethers.provider.send("evm_increaseTime", [5 * 24 * 60 * 60]); // 5 days
+
+        await rewarderAttacker.attack();
     });
 
     after(async function () {
@@ -78,28 +84,38 @@ describe('[Challenge] The rewarder', function () {
         expect(
             await rewarderPool.roundNumber()
         ).to.be.eq(3);
+        console.log('test 1')
 
         // Users should get neglegible rewards this round
         for (let i = 0; i < users.length; i++) {
             await rewarderPool.connect(users[i]).distributeRewards();
             const userRewards = await rewardToken.balanceOf(users[i].address);
             const delta = userRewards.sub((await rewarderPool.REWARDS()).div(users.length));
+            console.log('delta: ', delta)
             expect(delta).to.be.lt(10n ** 16n)
         }
+        console.log('test 2')
         
         // Rewards must have been issued to the player account
         expect(await rewardToken.totalSupply()).to.be.gt(await rewarderPool.REWARDS());
+        console.log('test 3')
+
         const playerRewards = await rewardToken.balanceOf(player.address);
         expect(playerRewards).to.be.gt(0);
+        console.log('test 4', playerRewards)
+
 
         // The amount of rewards earned should be close to total available amount
         const delta = (await rewarderPool.REWARDS()).sub(playerRewards);
         expect(delta).to.be.lt(10n ** 17n);
+        console.log('test 5')
 
         // Balance of DVT tokens in player and lending pool hasn't changed
         expect(await liquidityToken.balanceOf(player.address)).to.eq(0);
+        console.log('test 6')
         expect(
             await liquidityToken.balanceOf(flashLoanPool.address)
         ).to.eq(TOKENS_IN_LENDER_POOL);
+        console.log('test 7')
     });
 });
